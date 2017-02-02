@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.0.1-development",
   "name": "airborne-base",
   "description": "Airborne Base components",
   "main": "dist/index.js",
@@ -81,6 +81,5 @@
     "commitizen": {
       "path": "node_modules/cz-conventional-changelog"
     }
-  },
-  "version": "0.0.0-development"
+  }
 }
