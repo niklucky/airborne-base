@@ -1,5 +1,5 @@
 {
-  "version": "0.0.1-development",
+  "version": "0.0.3-alpha",
   "name": "airborne-base",
   "description": "Airborne Base components",
   "main": "dist/index.js",
