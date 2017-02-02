@@ -5,9 +5,6 @@ class BaseController {
     if ((di instanceof Object) === false) {
       throw new Error('[Fatal] BaseController: you need to provide valid DI');
     }
-    if (di.get('request') === undefined) {
-      throw new Error('[Fatal] BaseController: you need to provide valid request in DI');
-    }
     this.di = di;
     this.service = new BaseService(di);
     this.rules = {};
@@ -46,6 +43,10 @@ class BaseController {
   mergeRequestData(requestParams) {
     const payload = {};
     const params = (requestParams || {});
+
+    if (this.di.get('request') === undefined) {
+      return params;
+    }
 
     const query = this.di.get('request').query;
     if (query !== undefined && Object.keys(query).length > 0) {
