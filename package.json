@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "precommit-test": "npm run cover && npm run check-coverage",
-    "precommit": "rimraf dist",
+    "precommit": "npm run build",
     "check-coverage": "nyc check-coverage --statements 60 --branches 60 --functions 30 --lines 60",
     "report-coverage": "cat ./coverage/lcov.info | codecov",
     "test": "mocha test --recursive --compilers js:babel-register",
