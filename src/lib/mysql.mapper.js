@@ -1,14 +1,24 @@
-const BaseMapper = require('./base.mapper');
-const MySQLQueryBuilder = require('mysql-qb');
+import BaseMapper from './base.mapper';
 
 class MySQLMapper extends BaseMapper {
   constructor(di) {
     super(di);
     this.db = null;
     this.dbTable = null;
-    this.queryBuilder = new MySQLQueryBuilder();
-  }
 
+    this.initQueryBuilder();
+    this.queryBuilder = null;
+  }
+  initQueryBuilder() {
+    try {
+      require.resolve('mysql-qb');
+      const MySQLQueryBuilder = require('mysql-qb');
+      this.queryBuilder = new MySQLQueryBuilder();
+    } catch (e) {
+      console.error('MySQL Query builder module is not found. It is used to build SQL queries.');
+      console.error('Install: npm i --save mysql-qb.');
+    }
+  }
   get(params) {
     if (params instanceof Object === false) {
       throw new Error('[Fatal] MySQLMapper: you have to provide params for get()');
@@ -34,6 +44,7 @@ class MySQLMapper extends BaseMapper {
           this.queryBuilder.where(params);
         }
         const query = this.queryBuilder.build();
+
         return this.db.query(query, (error, rows, fields) => {
           if (error) {
             reject(error, fields);
@@ -126,4 +137,4 @@ class MySQLMapper extends BaseMapper {
   }
 }
 
-module.exports = MySQLMapper;
+export default MySQLMapper;
