@@ -69,7 +69,7 @@ class MySQLMapper extends BaseMapper {
     conn.on('error', (err) => {
       console.log('Connection down. Reconnecting...', err);
       setTimeout(() => {
-        this.connect();
+        this.connect(cb);
       }, 1000);
     });
     conn.on('connect', () => {
