@@ -1,23 +1,93 @@
 import BaseMapper from './base.mapper';
+import checkInstall from './installer';
 
 class MySQLMapper extends BaseMapper {
-  constructor(di) {
+  constructor(di, dbConnectionName, dbConfig, dbTable) {
     super(di);
-    this.db = null;
-    this.dbTable = null;
-
-    this.initQueryBuilder();
+    checkInstall('mysql');
+    this.db = {};
+    this.dbConnectionName = dbConnectionName;
+    this.dbConfig = dbConfig;
+    this.dbTable = dbTable;
     this.queryBuilder = null;
+    this.initQueryBuilder();
+    this.initConnection();
   }
   initQueryBuilder() {
-    try {
-      require.resolve('mysql-qb');
+    if (checkInstall('mysql-qb')) {
       const MySQLQueryBuilder = require('mysql-qb');
       this.queryBuilder = new MySQLQueryBuilder();
-    } catch (e) {
-      console.error('MySQL Query builder module is not found. It is used to build SQL queries.');
-      console.error('Install: npm i --save mysql-qb.');
     }
+  }
+  initConnection() {
+    if (this.di.get('connections') && this.di.get('connections')[this.dbConnectionName]) {
+      this.db = this.di.get('connections')[this.dbConnectionName];
+    } else {
+      let conn = this.di.get('connections');
+      if (conn === undefined) {
+        conn = {};
+      }
+      conn[this.dbConnectionName] = this.db;
+      this.di.set('connections', conn);
+    }
+  }
+  checkConnection() {
+    return new Promise((resolve) => {
+      if (this.db.state !== undefined && this.db.state !== 'disconnected') {
+        return resolve(true);
+      }
+      return this.connect(resolve);
+    });
+  }
+  connect(cb) {
+    const mysql = require('mysql'); // eslint-disable-line global-require
+
+    const connection = this.dbConfig;
+
+    if (!connection.user) {
+      connection.user = 'root';
+    }
+    if (!connection.host) {
+      connection.host = 'localhost';
+    }
+    if (!connection.port) {
+      connection.port = 3306;
+    }
+    if (connection.charset === undefined) {
+      connection.charset = 'utf8';
+    }
+
+    const conn = mysql.createConnection({
+      host: connection.host,
+      port: connection.port,
+      user: connection.user,
+      password: connection.password,
+      database: connection.database,
+      charset: connection.charset,
+    });
+    conn.connect();
+    conn.on('error', (err) => {
+      console.log('Connection down. Reconnecting...', err);
+      setTimeout(() => {
+        this.connect();
+      }, 1000);
+    });
+    conn.on('connect', () => {
+      cb(true);
+      console.log('Connected');
+    });
+    const connections = this.di.get('connections');
+    connections[this.dbConnectionName] = conn;
+    this.di.set('connections', connections);
+    this.db = conn;
+  }
+  exec(query, cb) {
+    this.checkConnection().then(() => {
+      this.db.query(query, cb);
+    });
+  }
+  query(query, cb) {
+    this.exec(query, cb);
   }
   get(params) {
     if (params instanceof Object === false) {
@@ -44,12 +114,15 @@ class MySQLMapper extends BaseMapper {
           this.queryBuilder.where(params);
         }
         const query = this.queryBuilder.build();
-
-        return this.db.query(query, (error, rows, fields) => {
+        return this.exec(query, (error, rows, fields) => {
           if (error) {
             reject(error, fields);
           }
-          resolve(this.buildCollection(rows));
+          if (rows === undefined) {
+            resolve(undefined);
+          } else {
+            resolve(this.buildCollection(rows));
+          }
         });
       } catch (e) {
         return reject(e);
@@ -70,7 +143,7 @@ class MySQLMapper extends BaseMapper {
           }
         }
         const query = this.queryBuilder.insert(this.dbTable, data).build();
-        return this.db.query(query, (error, result) => {
+        return this.exec(query, (error, result) => {
           if (error) {
             return reject(error);
           }
@@ -105,7 +178,7 @@ class MySQLMapper extends BaseMapper {
           }
         }
         const query = this.queryBuilder.update(this.dbTable, data).where(params).build();
-        return this.db.query(query, (error) => {
+        return this.exec(query, (error) => {
           if (error) {
             return reject(error);
           }
@@ -124,7 +197,7 @@ class MySQLMapper extends BaseMapper {
     return new Promise((resolve, reject) => {
       try {
         const query = this.queryBuilder.delete(this.dbTable).where(params).build();
-        return this.db.query(query, (error, result) => {
+        return this.exec(query, (error, result) => {
           if (error) {
             return reject(error);
           }

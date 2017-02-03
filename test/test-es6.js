@@ -1,4 +1,4 @@
-import { HTTPMapper } from './index';
+import { HTTPMapper } from '../dist/index';
 
 const bm = new HTTPMapper({});
 
