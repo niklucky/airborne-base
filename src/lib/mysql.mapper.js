@@ -2,10 +2,10 @@ import BaseMapper from './base.mapper';
 import checkInstall from './installer';
 
 class MySQLMapper extends BaseMapper {
-  constructor(di, dbConnectionName, dbConfig, dbTable) {
+  constructor(di, db, dbConfig, dbTable) {
     super(di);
     checkInstall('mysql');
-    this.db = {};
+    this.db = db;
     this.dbConfig = dbConfig;
     this.dbTable = dbTable;
     this.queryBuilder = null;
