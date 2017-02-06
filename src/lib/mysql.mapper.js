@@ -6,12 +6,10 @@ class MySQLMapper extends BaseMapper {
     super(di);
     checkInstall('mysql');
     this.db = {};
-    this.dbConnectionName = dbConnectionName;
     this.dbConfig = dbConfig;
     this.dbTable = dbTable;
     this.queryBuilder = null;
     this.initQueryBuilder();
-    this.initConnection();
   }
   initQueryBuilder() {
     if (checkInstall('mysql-qb')) {
@@ -19,18 +17,7 @@ class MySQLMapper extends BaseMapper {
       this.queryBuilder = new MySQLQueryBuilder();
     }
   }
-  initConnection() {
-    if (this.di.get('connections') && this.di.get('connections')[this.dbConnectionName]) {
-      this.db = this.di.get('connections')[this.dbConnectionName];
-    } else {
-      let conn = this.di.get('connections');
-      if (conn === undefined) {
-        conn = {};
-      }
-      conn[this.dbConnectionName] = this.db;
-      this.di.set('connections', conn);
-    }
-  }
+
   checkConnection() {
     return new Promise((resolve) => {
       if (this.db.state !== undefined && this.db.state !== 'disconnected') {
@@ -76,9 +63,6 @@ class MySQLMapper extends BaseMapper {
       cb(true);
       console.log('Connected');
     });
-    const connections = this.di.get('connections');
-    connections[this.dbConnectionName] = conn;
-    this.di.set('connections', connections);
     this.db = conn;
   }
   exec(query, cb) {
