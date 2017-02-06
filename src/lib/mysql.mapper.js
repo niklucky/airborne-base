@@ -1,6 +1,14 @@
 import BaseMapper from './base.mapper';
 import checkInstall from './installer';
 
+const CONNECTING = 'connecting';
+const DISCONNECTED = 'disconnected';
+const CONNECTION_WAIT_TIMEOUT = 100; // ms
+const DEFAULT_CHARSET = 'utf8';
+const DEFAULT_PORT = 3306;
+const DEFAULT_HOST = 'localhost';
+const DEFAULT_USER = 'root';
+
 class MySQLMapper extends BaseMapper {
   constructor(di, db, dbConfig, dbTable) {
     super(di);
@@ -18,30 +26,35 @@ class MySQLMapper extends BaseMapper {
     }
   }
 
-  checkConnection() {
-    return new Promise((resolve) => {
-      if (this.db.state !== undefined && this.db.state !== 'disconnected') {
-        return resolve(true);
-      }
-      return this.connect(resolve);
-    });
+  checkConnection(cb) {
+    if (this.db.state === CONNECTING) {
+      return setTimeout(() => {
+        this.checkConnection(cb);
+      }, CONNECTION_WAIT_TIMEOUT);
+    }
+    if (this.db.state !== undefined && this.db.state !== DISCONNECTED) {
+      return cb(true);
+    }
+    return this.connect(cb);
   }
   connect(cb) {
     const mysql = require('mysql'); // eslint-disable-line global-require
 
+    this.db.state = CONNECTING;
+
     const connection = this.dbConfig;
 
     if (!connection.user) {
-      connection.user = 'root';
+      connection.user = DEFAULT_USER;
     }
     if (!connection.host) {
-      connection.host = 'localhost';
+      connection.host = DEFAULT_HOST;
     }
     if (!connection.port) {
-      connection.port = 3306;
+      connection.port = DEFAULT_PORT;
     }
     if (connection.charset === undefined) {
-      connection.charset = 'utf8';
+      connection.charset = DEFAULT_CHARSET;
     }
 
     const conn = mysql.createConnection({
@@ -61,12 +74,12 @@ class MySQLMapper extends BaseMapper {
     });
     conn.on('connect', () => {
       cb(true);
-      console.log('Connected');
+      console.log('MySQL Connected');
     });
     this.db = conn;
   }
   exec(query, cb) {
-    this.checkConnection().then(() => {
+    this.checkConnection(() => {
       this.db.query(query, cb);
     });
   }
