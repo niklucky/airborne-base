@@ -1,9 +1,9 @@
 /* globals Promise */
-const HTTP = require('http');
-const QueryString = require('querystring');
+import HTTP from 'http';
+import QueryString from 'querystring';
 
-const BaseMapper = require('./base.mapper');
-const BaseModel = require('./base.model');
+import BaseMapper from './base.mapper';
+import BaseModel from './base.model';
 
 class HTTPMapper extends BaseMapper {
   constructor(di) {
@@ -11,8 +11,11 @@ class HTTPMapper extends BaseMapper {
     this.host = '127.0.0.1';
     this.port = 80;
     this.path = '';
-    this.headers = [];
+    this.headers = {};
     this.provider = HTTP;
+    this.defaultHeaders = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
     this.Model = BaseModel;
   }
   get(params) {
@@ -40,29 +43,34 @@ class HTTPMapper extends BaseMapper {
 
   request(method, params, postData) {
     const data = QueryString.stringify(postData);
+    const headers = {
+      'Content-Length': Buffer.byteLength(data),
+      ...this.defaultHeaders,
+      ...this.headers
+    };
     const options = {
       hostname: this.host,
       port: this.port,
       path: this.path + '?' + QueryString.stringify(params),
       method,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': Buffer.byteLength(data)
-      },
+      headers
     };
+    let result = '';
     return new Promise((resolve, reject) => {
       const request = this.provider.request(options, (response) => {
         // console.log(`STATUS: ${response.statusCode}`);
         // console.log(`HEADERS: ${JSON.stringify(response.headers)}`);
         response.setEncoding('utf8');
         response.on('data', (chunk) => {
+          result += chunk;
+        });
+        response.on('end', () => {
           try {
-            let result = chunk;
             if (response.headers['content-type'].indexOf('json') !== -1) {
-              result = JSON.parse(chunk);
+              result = JSON.parse(result);
             }
             if (response.statusCode > 199 && response.statusCode < 301) {
-              resolve(new this.Model(result));
+              resolve(this.buildCollection(result));
             } else {
               reject({ message: 'Remote server error', stack: result });
             }
@@ -70,9 +78,6 @@ class HTTPMapper extends BaseMapper {
             reject(e);
           }
         });
-        // response.on('end', () => {
-        //   console.log('No more data in response.')
-        // });
       });
       request.on('error', (error) => {
         reject(Error(error));
@@ -87,4 +92,4 @@ class HTTPMapper extends BaseMapper {
   }
 }
 
-module.exports = HTTPMapper;
+export default HTTPMapper;
