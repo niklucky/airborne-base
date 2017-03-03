@@ -82,7 +82,11 @@ class MySQLMapper extends BaseMapper {
   }
   exec(query, cb) {
     this.checkConnection(() => {
-      this.db.connection.query(query, cb);
+      if (this.db.query) {
+        this.db.query(query, cb);
+      } else {
+        this.db.connection.query(query, cb);
+      }
     });
   }
   query(query, cb) {
