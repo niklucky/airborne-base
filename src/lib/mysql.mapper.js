@@ -2,6 +2,7 @@ import BaseMapper from './base.mapper';
 import checkInstall from './installer';
 
 const CONNECTING = 'connecting';
+const CONNECTED = 'connected';
 const DISCONNECTED = 'disconnected';
 const CONNECTION_WAIT_TIMEOUT = 100; // ms
 const DEFAULT_CHARSET = 'utf8';
@@ -76,11 +77,12 @@ class MySQLMapper extends BaseMapper {
       cb(true);
       console.log('MySQL Connected');
     });
-    this.db = conn;
+    this.db.state = CONNECTED;
+    this.db.connection = conn;
   }
   exec(query, cb) {
     this.checkConnection(() => {
-      this.db.query(query, cb);
+      this.db.connection.query(query, cb);
     });
   }
   query(query, cb) {
