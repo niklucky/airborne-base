@@ -20,7 +20,7 @@ class BaseController {
       const validator = new Validator(this.rules[method]);
       const result = validator.validate(requestData);
       if (result.result === false) {
-        return this.di.get('responder').sendError({ message: 'Validation error', stack: result.errors }, 400);
+        return this.di.get('responder').sendError({ code: 100, message: 'Validation error', errors: result.errors }, 400);
       }
       requestData.params = result.validated.params;
       requestData.payload = result.validated.payload;
