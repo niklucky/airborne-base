@@ -75,17 +75,17 @@ class PostgresMapper extends BaseMapper {
   exec(query, cb) {
     this.checkConnection(() => {
       if (this.db.query) {
-        this.db.query(query).then(result => {
-          cb(this.prepareResult(result))
+        this.db.query(query).then((result) => {
+          cb(this.prepareResult(result));
         });
       } else {
-        this.db.connection.query(query).then(result => {
-          cb(this.prepareResult(result))
+        this.db.connection.query(query).then((result) => {
+          cb(this.prepareResult(result));
         });
       }
     });
   }
-  prepareResult(result) {
+  prepareResult(result) { // eslint-disable-line
     if (result.rows) {
       const data = JSON.stringify(result.rows);
       return JSON.parse(data);
@@ -123,7 +123,7 @@ class PostgresMapper extends BaseMapper {
         console.log('query', query);
         return this.exec(query, (error, rows) => {
           if (error) {
-            reject(error, fields);
+            reject(error, rows);
           }
           if (rows === undefined) {
             resolve(undefined);
