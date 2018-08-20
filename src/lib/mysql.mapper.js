@@ -2,7 +2,7 @@ import BaseMapper from './base.mapper';
 import checkInstall from './installer';
 
 const CONNECTING = 'connecting';
-const CONNECTED = 'connected';
+// const CONNECTED = 'connected';
 const DISCONNECTED = 'disconnected';
 const CONNECTION_WAIT_TIMEOUT = 100; // ms
 const DEFAULT_CHARSET = 'utf8';
@@ -15,7 +15,6 @@ class MySQLMapper extends BaseMapper {
     super(di);
     checkInstall('mysql');
     this.db = db;
-    this.dbConfig = dbConfig;
     this.dbTable = dbTable;
     this.queryBuilder = null;
     this.initQueryBuilder();
@@ -38,12 +37,11 @@ class MySQLMapper extends BaseMapper {
     }
     return this.connect(cb);
   }
-  connect(cb) {
+  connect(query, cb) {
     const mysql = require('mysql'); // eslint-disable-line global-require
 
     this.db.state = CONNECTING;
-
-    const connection = this.dbConfig;
+    const connection = this.db.config;
 
     if (!connection.user) {
       connection.user = DEFAULT_USER;
@@ -60,23 +58,20 @@ class MySQLMapper extends BaseMapper {
     connection.dateStrings = (connection.dateStrings !== undefined)
       ? connection.dateStrings
       : false;
-
     const conn = mysql.createConnection(connection);
-    conn.connect();
-    conn.on('error', (err) => {
-      console.log('Connection down. Reconnecting...', err);
-      setTimeout(() => {
-        this.connect(cb);
-      }, 1000);
+    conn.connect((err) => {
+      if (err) console.log('connect err', err);
+      console.log('connect');
     });
-    conn.on('connect', () => {
-      cb(true);
-      console.log('MySQL Connected');
+    conn.query(query, cb);
+    conn.end((err) => {
+      if (err) console.log('disconnect err', err);
+      console.log('disconnect');
     });
-    this.db.state = CONNECTED;
-    this.db.connection = conn;
   }
   exec(query, cb) {
+    // return this.connect(query, cb);
+    // this.db.connection.query(query, cb);
     // this.checkConnection(() => {
     //   if (this.db.query) {
     //     this.db.query(query, cb);
